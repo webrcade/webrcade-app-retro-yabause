@@ -9,7 +9,7 @@ import {
   EditorScreen,
   GamepadWhiteImage,
   KeyboardWhiteImage,
-  ThreedoBackground,
+  SaturnBackground,
   PauseScreenButton,
   Resources,
   SaveStatesEditor,
@@ -156,7 +156,7 @@ export class EmulatorPauseScreen extends Component {
         ) : null}
         {mode === ModeEnum.STATE ? (
           <SaveStatesEditor
-            emptyImageSrc={ThreedoBackground}
+            emptyImageSrc={SaturnBackground}
             emulator={emulator}
             onClose={closeCallback}
             showStatusCallback={emulator.saveMessageCallback}
