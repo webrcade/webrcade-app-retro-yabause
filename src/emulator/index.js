@@ -131,6 +131,10 @@ export class Emulator extends RetroAppWrapper {
     return 'js/yabause_libretro.js';
   }
 
+  getHashFileExtension() {
+    return 'chd';
+  }
+
   getPrefs() {
     return this.prefs;
   }
