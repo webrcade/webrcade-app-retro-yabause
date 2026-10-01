@@ -1,16 +1,44 @@
 import {
+  BasicRetroAppWrapper,
   Controller,
   Controllers,
   KeyCodeToControlMapping,
   ScriptAudioProcessor,
-  RetroAppWrapper,
   DisplayLoop,
   KCODES,
   CIDS,
   LOG,
 } from '@webrcade/app-common';
 
-export class Emulator extends RetroAppWrapper {
+export class Emulator extends BasicRetroAppWrapper {
+
+  // WRC - the standard Saturn 6-button pad's L/R are plain digital shoulder
+  // buttons, not real analog triggers held for an extended gameplay reason
+  // (the libretro core's RETRO_DEVICE_ANALOG fallback for L2/R2 just lets it
+  // accept a racing-wheel-style peripheral if one is plugged in - it isn't
+  // evidence of real, typical Saturn game usage). Same "no real trigger"
+  // case as retro-neocd/retro-picodrive/beetle-pcfx/retro-opera, so this
+  // overrides the base class's `true` default to `false`.
+  isEscapeHackEnabled() {
+    return false;
+  }
+
+  // WRC - the underlying libretro-yabause core is stock upstream (no WRC
+  // patch) and maps physical Y -> Saturn X and physical LB -> Saturn Y,
+  // the opposite of the convention webrcade's own Genesis Plus GX/PicoDrive
+  // patches use for every other Sega system (Genesis, Sega CD, 32X, 32X CD
+  // all map physical LB -> X and physical Y -> Y). Rather than touching the
+  // native core, swap those two bits here before they're sent in, so
+  // physical Y/LB line up with Saturn X/Y the same way they do everywhere
+  // else in the Sega family.
+  sendInput(controller, input, analog0x, analog0y, analog1x, analog1y) {
+    const y = input & this.INP_Y;
+    const lbump = input & this.INP_LBUMP;
+    input = (input & ~(this.INP_Y | this.INP_LBUMP))
+      | (y ? this.INP_LBUMP : 0)
+      | (lbump ? this.INP_Y : 0);
+    super.sendInput(controller, input, analog0x, analog0y, analog1x, analog1y);
+  }
 
   GAME_SRAM_NAME = 'game.srm';
   SAVE_NAME = 'sav';
@@ -116,6 +144,8 @@ export class Emulator extends RetroAppWrapper {
   }
 
   onFrame() {
+    super.onFrame();
+
     if (this.audioStarted !== -1) {
       if (this.audioStarted > 1) {
         this.audioStarted = -1;
@@ -126,6 +156,12 @@ export class Emulator extends RetroAppWrapper {
       }
     }
   }
+
+  // Base class default pauses on any tap anywhere on screen -- redundant
+  // (and disruptive) now that there's a dedicated Pause button in the
+  // touch overlay. Same override every other TouchOverlay app uses for
+  // the same reason.
+  createTouchListener() {}
 
   getScriptUrl() {
     return 'js/yabause_libretro.js';
